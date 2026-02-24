@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -7053,6 +7053,12 @@ namespace CodeWalker
         private void ToolsMenuProjectWindow_Click(object sender, EventArgs e)
         {
             ShowProjectForm();
+        }
+
+        private void ToolsMenuRageQuitBridge_Click(object sender, EventArgs e)
+        {
+            ShowProjectForm();
+            ProjectForm.ShowRageQuitBridgePanel();
         }
 
         private void ToolsMenuCutsceneViewer_Click(object sender, EventArgs e)

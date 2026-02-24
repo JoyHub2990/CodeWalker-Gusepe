@@ -1,4 +1,4 @@
-﻿using CodeWalker.WinForms;
+using CodeWalker.WinForms;
 
 namespace CodeWalker
 {
@@ -234,6 +234,7 @@ namespace CodeWalker
             this.ToolsMenuExtractRawFiles = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuExtractShaders = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuOptions = new System.Windows.Forms.ToolStripMenuItem();
+            this.ToolsMenuRageQuitBridge = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolbarPanel = new System.Windows.Forms.Panel();
             this.Toolbar = new CodeWalker.WinForms.ToolStripFix();
             this.ToolbarNewButton = new System.Windows.Forms.ToolStripSplitButton();
@@ -2762,7 +2763,8 @@ namespace CodeWalker
             this.ToolsMenuExtractTextures,
             this.ToolsMenuExtractRawFiles,
             this.ToolsMenuExtractShaders,
-            this.ToolsMenuOptions});
+            this.ToolsMenuOptions,
+            this.ToolsMenuRageQuitBridge});
             this.ToolsMenu.Name = "ToolsMenu";
             this.ToolsMenu.Size = new System.Drawing.Size(171, 356);
             // 
@@ -2883,6 +2885,13 @@ namespace CodeWalker
             this.ToolsMenuOptions.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuOptions.Text = "Options...";
             this.ToolsMenuOptions.Click += new System.EventHandler(this.ToolsMenuOptions_Click);
+            // 
+            // ToolsMenuRageQuitBridge
+            // 
+            this.ToolsMenuRageQuitBridge.Name = "ToolsMenuRageQuitBridge";
+            this.ToolsMenuRageQuitBridge.Size = new System.Drawing.Size(170, 22);
+            this.ToolsMenuRageQuitBridge.Text = "RageQuit Bridge...";
+            this.ToolsMenuRageQuitBridge.Click += new System.EventHandler(this.ToolsMenuRageQuitBridge_Click);
             // 
             // ToolbarPanel
             // 
@@ -3904,6 +3913,7 @@ namespace CodeWalker
         private System.Windows.Forms.Button AdvancedSettingsButton;
         private System.Windows.Forms.Button ControlSettingsButton;
         private System.Windows.Forms.ToolStripMenuItem ToolsMenuOptions;
+        private System.Windows.Forms.ToolStripMenuItem ToolsMenuRageQuitBridge;
         private ToolStripSplitButtonFix ToolbarSelectButton;
         private System.Windows.Forms.ToolStripMenuItem ToolbarSelectEntityButton;
         private System.Windows.Forms.ToolStripMenuItem ToolbarSelectEntityExtensionButton;

@@ -1,4 +1,4 @@
-﻿using CodeWalker.GameFiles;
+using CodeWalker.GameFiles;
 using CodeWalker.Project.Panels;
 using CodeWalker.Properties;
 using CodeWalker.Utils;
@@ -26,6 +26,7 @@ namespace CodeWalker.Project
         public ProjectExplorerPanel ProjectExplorer { get; set; }
         public ProjectPanel PreviewPanel { get; set; }
         public DeleteGrassPanel DeleteGrassPanel { get; set; }
+        public RageQuitBridgePanel RageQuitBridgePanel { get; private set; }
 
         public GameFileCache GameFileCache { get; private set; }
         public RpfManager RpfMan { get; private set; }
@@ -286,6 +287,20 @@ namespace CodeWalker.Project
                 ProjectExplorer.Show();
             }
         }
+        public void ShowRageQuitBridgePanel()
+        {
+            if ((RageQuitBridgePanel == null) || (RageQuitBridgePanel.IsDisposed) || (RageQuitBridgePanel.Disposing))
+            {
+                RageQuitBridgePanel = new RageQuitBridgePanel(this);
+                RageQuitBridgePanel.SetTheme(Theme);
+                RageQuitBridgePanel.Show(MainDockPanel, DockState.DockRight);
+            }
+            else
+            {
+                RageQuitBridgePanel.Show();
+            }
+        }
+
         public void ShowWelcomePanel()
         {
             ShowPreviewPanel(() => { return new WelcomePanel(); });
