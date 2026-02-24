@@ -7058,7 +7058,7 @@ namespace CodeWalker
         private void ToolsMenuRageQuitBridge_Click(object sender, EventArgs e)
         {
             ShowProjectForm();
-            ProjectForm.ShowRageQuitBridgePanel();
+            ProjectForm.ShowRageQuitBridgeSection();
         }
 
         private void ToolsMenuCutsceneViewer_Click(object sender, EventArgs e)

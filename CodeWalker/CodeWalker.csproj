@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <Reference Include="System.Windows.Forms.DataVisualization" />
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 
   <ItemGroup>

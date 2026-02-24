@@ -271,6 +271,7 @@ namespace CodeWalker.Project
         {
             ShowProjectExplorer();
             ShowWelcomePanel();
+            ShowRageQuitBridgeSection();
         }
         public void ShowProjectExplorer()
         {
@@ -287,16 +288,27 @@ namespace CodeWalker.Project
                 ProjectExplorer.Show();
             }
         }
-        public void ShowRageQuitBridgePanel()
+        /// <summary>
+        /// Shows the RageQuit Bridge panel docked to the right, creating it if necessary.
+        /// Calling this again after the user has closed the panel will restore it to the same position.
+        /// </summary>
+        public void ShowRageQuitBridgeSection()
         {
-            if ((RageQuitBridgePanel == null) || (RageQuitBridgePanel.IsDisposed) || (RageQuitBridgePanel.Disposing))
+            if ((RageQuitBridgePanel == null) || RageQuitBridgePanel.IsDisposed || RageQuitBridgePanel.Disposing)
             {
                 RageQuitBridgePanel = new RageQuitBridgePanel(this);
+                RageQuitBridgePanel.HideOnClose = true;
                 RageQuitBridgePanel.SetTheme(Theme);
+
+                // Forward Project Explorer selection events so YMAP picking works
+                if ((ProjectExplorer != null) && !ProjectExplorer.IsDisposed)
+                    ProjectExplorer.OnItemSelected += RageQuitBridgePanel.OnProjectExplorerItemSelected;
+
                 RageQuitBridgePanel.Show(MainDockPanel, DockState.DockRight);
             }
             else
             {
+                // Panel already exists – restore it if hidden, otherwise bring to front
                 RageQuitBridgePanel.Show();
             }
         }
