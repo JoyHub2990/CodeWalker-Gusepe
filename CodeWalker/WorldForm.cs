@@ -430,6 +430,8 @@ namespace CodeWalker
 
             Renderer.BeginRender(context);
 
+            ProjectForm?.RageQuitBridgePanel?.PopulateHiddenEntities();
+
             Renderer.RenderSkyAndClouds();
 
             Renderer.SelectedDrawable = SelectedItem.Drawable;

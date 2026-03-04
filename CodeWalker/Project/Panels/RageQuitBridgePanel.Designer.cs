@@ -29,6 +29,7 @@ namespace CodeWalker.Project.Panels
             this.AddToListButton        = new System.Windows.Forms.Button();
             this.RemoveButton           = new System.Windows.Forms.Button();
             this.ClearListButton        = new System.Windows.Forms.Button();
+            this.HideButton             = new System.Windows.Forms.Button();
             this.SendListButton         = new System.Windows.Forms.Button();
             this.SendSelectionButton    = new System.Windows.Forms.Button();
             this.ImportAsAssetCheckBox  = new System.Windows.Forms.CheckBox();
@@ -131,6 +132,7 @@ namespace CodeWalker.Project.Panels
             this.EntityButtonsPanel.Controls.Add(this.AddToListButton);
             this.EntityButtonsPanel.Controls.Add(this.RemoveButton);
             this.EntityButtonsPanel.Controls.Add(this.ClearListButton);
+            this.EntityButtonsPanel.Controls.Add(this.HideButton);
             this.EntityButtonsPanel.Controls.Add(this.SendListButton);
             this.EntityButtonsPanel.Controls.Add(this.SendSelectionButton);
             this.EntityButtonsPanel.Controls.Add(this.ImportAsAssetCheckBox);
@@ -164,6 +166,13 @@ namespace CodeWalker.Project.Panels
             this.ClearListButton.Text = "Clear List";
             this.ClearListButton.UseVisualStyleBackColor = true;
             this.ClearListButton.Click += new System.EventHandler(this.ClearListButton_Click);
+
+            this.HideButton.Location = new System.Drawing.Point(234, 18);
+            this.HideButton.Size = new System.Drawing.Size(62, 24);
+            this.HideButton.Name = "HideButton";
+            this.HideButton.Text = "o Hide";
+            this.HideButton.UseVisualStyleBackColor = true;
+            this.HideButton.Click += new System.EventHandler(this.HideButton_Click);
 
             this.SendListButton.Anchor = System.Windows.Forms.AnchorStyles.Top
                 | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
@@ -401,6 +410,7 @@ namespace CodeWalker.Project.Panels
         private System.Windows.Forms.Button      AddToListButton;
         private System.Windows.Forms.Button      RemoveButton;
         private System.Windows.Forms.Button      ClearListButton;
+        private System.Windows.Forms.Button      HideButton;
         private System.Windows.Forms.Button      SendListButton;
         private System.Windows.Forms.Button      SendSelectionButton;
         private System.Windows.Forms.CheckBox    ImportAsAssetCheckBox;

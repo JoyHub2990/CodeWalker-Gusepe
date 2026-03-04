@@ -25,6 +25,9 @@ namespace CodeWalker.Project.Panels
         // added twice, but multiple instances sharing the same name are all kept.
         private readonly List<YmapEntityDef> _entityList = new List<YmapEntityDef>();
 
+        // Entities currently hidden in the viewport (toggled by the Hide button).
+        private readonly HashSet<YmapEntityDef> _hiddenEntities = new HashSet<YmapEntityDef>();
+
         private readonly Dictionary<string, string> _ymapList =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -103,13 +106,27 @@ namespace CodeWalker.Project.Panels
             {
                 var pos = ent.Position;
                 var ori = ent.Orientation;
-                var lvi = new ListViewItem(ent.Name);
+                bool hidden = _hiddenEntities.Contains(ent);
+                var lvi = new ListViewItem(hidden ? "○ " + ent.Name : "● " + ent.Name);
                 lvi.SubItems.Add(string.Format(ic, "{0:F1}, {1:F1}, {2:F1}", pos.X, pos.Y, pos.Z));
                 lvi.SubItems.Add(string.Format(ic, "{0:F2}, {1:F2}, {2:F2}, {3:F2}", ori.X, ori.Y, ori.Z, ori.W));
                 lvi.Tag = ent;
+                if (hidden)
+                {
+                    lvi.ForeColor = System.Drawing.Color.Gray;
+                    lvi.Font = new System.Drawing.Font(EntityListView.Font, System.Drawing.FontStyle.Strikeout);
+                }
                 EntityListView.Items.Add(lvi);
             }
-            EntityCountLabel.Text = $"{_entityList.Count} entity/ies";
+            EntityCountLabel.Text = $"{_entityList.Count} entity/ies ({_hiddenEntities.Count} hidden)";
+
+            // Button label reflects next action: Show when all hidden, Hide otherwise.
+            if (_entityList.Count == 0)
+                HideButton.Text = "o Hide";
+            else if (_entityList.All(ent => _hiddenEntities.Contains(ent)))
+                HideButton.Text = "o Show";
+            else
+                HideButton.Text = "o Hide";
         }
 
         private void RefreshYmapList()
@@ -228,7 +245,11 @@ namespace CodeWalker.Project.Panels
                 .Where(ent => ent != null)
                 .ToList();
 
-            foreach (var ent in toRemove) _entityList.Remove(ent);
+            foreach (var ent in toRemove)
+            {
+                _entityList.Remove(ent);
+                _hiddenEntities.Remove(ent);
+            }
             RefreshEntityList();
             SetStatus("Removed selected entities.");
         }
@@ -236,8 +257,42 @@ namespace CodeWalker.Project.Panels
         private void ClearListButton_Click(object sender, EventArgs e)
         {
             _entityList.Clear();
+            _hiddenEntities.Clear();
             RefreshEntityList();
             SetStatus("Entity list cleared.");
+        }
+
+        private void HideButton_Click(object sender, EventArgs e)
+        {
+            if (_entityList.Count == 0) { SetStatus("List is empty — add entities first."); return; }
+
+            // Toggle entire list: if all are hidden → show all; otherwise → hide all.
+            bool allHidden = _entityList.All(ent => _hiddenEntities.Contains(ent));
+            if (allHidden)
+            {
+                foreach (var ent in _entityList) _hiddenEntities.Remove(ent);
+                SetStatus($"Showed all {_entityList.Count} entity/ies in viewport.");
+            }
+            else
+            {
+                foreach (var ent in _entityList) _hiddenEntities.Add(ent);
+                SetStatus($"Hidden all {_entityList.Count} entity/ies from viewport.");
+            }
+
+            RefreshEntityList();
+        }
+
+        /// <summary>
+        /// Called every render frame by WorldForm to re-populate Renderer.HideEntities
+        /// (which is cleared at the start of each frame).
+        /// </summary>
+        public void PopulateHiddenEntities()
+        {
+            if (_hiddenEntities.Count == 0) return;
+            var renderer = ProjectForm?.WorldForm?.Renderer;
+            if (renderer == null) return;
+            foreach (var ent in _hiddenEntities)
+                renderer.RenderHideEntity(ent);
         }
 
         private async void SendListButton_Click(object sender, EventArgs e)
