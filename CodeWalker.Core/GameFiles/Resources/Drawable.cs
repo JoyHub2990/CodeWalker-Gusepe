@@ -1,4 +1,4 @@
-﻿using SharpDX;
+using SharpDX;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -3965,6 +3965,25 @@ namespace CodeWalker.GameFiles
         public override string ToString()
         {
             return VerticesCount.ToString() + " verts, " + Shader.ToString();
+        }
+
+        public float RayIntersect(Ray ray, float maxDist)
+        {
+            float hitdist = float.MaxValue;
+            if ((VertexData == null) || (IndexBuffer == null)) return hitdist;
+            var indices = IndexBuffer.Indices;
+            if (indices == null) return hitdist;
+            var cnt = indices.Length;
+            for (int i = 0; i < cnt; i += 3)
+            {
+                var v0 = VertexData.GetVector3(indices[i], 0);
+                var v1 = VertexData.GetVector3(indices[i + 1], 0);
+                var v2 = VertexData.GetVector3(indices[i + 2], 0);
+                float dist;
+                if (ray.Intersects(ref v0, ref v1, ref v2, out dist))
+                    if ((dist < hitdist) && (dist < maxDist)) hitdist = dist;
+            }
+            return hitdist;
         }
     }
 

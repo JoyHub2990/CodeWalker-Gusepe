@@ -1,4 +1,4 @@
-﻿using CodeWalker.GameFiles;
+using CodeWalker.GameFiles;
 using CodeWalker.Project;
 using CodeWalker.World;
 using SharpDX;
@@ -38,6 +38,7 @@ namespace CodeWalker
         Occlusion = 19,
         CalmingQuad = 20,
         WaveQuad = 21,
+        EntityPrecision = 22,
     }
 
 

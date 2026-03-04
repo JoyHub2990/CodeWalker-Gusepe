@@ -1,4 +1,4 @@
-﻿using CodeWalker.GameFiles;
+using CodeWalker.GameFiles;
 using CodeWalker.Properties;
 using CodeWalker.World;
 using SharpDX;
@@ -1270,6 +1270,59 @@ namespace CodeWalker.Rendering
                 RenderSelectionBox(p1, p2, a2, a3, colourval);
             }
 
+        }
+
+        public void RenderFilledTriangles(IEnumerable<VertexTypePC> verts, Matrix transform, DepthStencilMode dsmode = DepthStencilMode.Enabled)
+        {
+            var vList = verts.ToList();
+            if (transform != Matrix.Identity)
+            {
+                VertexTypePC v;
+                for (int i = 0; i < vList.Count; i++)
+                {
+                    v = vList[i];
+                    v.Position = (Vector3)Vector3.Transform(v.Position, transform);
+                    vList[i] = v;
+                }
+            }
+            shaders.SetDepthStencilMode(context, dsmode);
+            shaders.Paths.RenderTriangles(context, vList, camera, shaders.GlobalLights);
+        }
+
+        public void RenderSelectionOverlay(DrawableBase drawable, Matrix transform, Color4 col)
+        {
+            if (drawable?.DrawableModels?.High == null) return;
+
+            shaders.SetDepthStencilMode(context, DepthStencilMode.DisableWrite);
+            shaders.SetRasterizerMode(context, RasterizerMode.SolidDblSided);
+            shaders.SetDefaultBlendState(context);
+
+            List<VertexTypePC> verts = new List<VertexTypePC>();
+            uint c = (uint)col.ToRgba();
+
+            foreach (var model in drawable.DrawableModels.High)
+            {
+                if (model.Geometries == null) continue;
+                foreach (var geom in model.Geometries)
+                {
+                    if (geom.IndexBuffer?.Indices == null || geom.VertexData == null) continue;
+                    var indices = geom.IndexBuffer.Indices;
+                    for (int i = 0; i < indices.Length; i++)
+                    {
+                        var idx = indices[i];
+                        var v = geom.VertexData.GetVector3(idx, 0);
+                        verts.Add(new VertexTypePC() { Position = v, Colour = c });
+                    }
+                }
+            }
+
+            if (verts.Count > 0)
+            {
+                RenderFilledTriangles(verts, transform, DepthStencilMode.DisableWrite);
+            }
+
+            shaders.SetDefaultBlendState(context);
+            shaders.SetRasterizerMode(context, RasterizerMode.Solid);
         }
 
         public void RenderSelectionGeometry(MapSelectionMode mode)

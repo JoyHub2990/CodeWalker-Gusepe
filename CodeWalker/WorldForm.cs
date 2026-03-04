@@ -1297,6 +1297,41 @@ namespace CodeWalker
                 ori = ori * CurMouseHit.BBOrientation;
             }
 
+            if ((CurMouseHit.EntityDef != null) && (CurMouseHit.EntityDef.Archetype != null))
+            {
+                var sel = SelectedItem;
+                bool selected = (sel.EntityDef == CurMouseHit.EntityDef);
+                if (!selected && (sel.MultipleSelectionItems != null))
+                {
+                    for (int i = 0; i < sel.MultipleSelectionItems.Length; i++)
+                    {
+                        if (sel.MultipleSelectionItems[i].EntityDef == CurMouseHit.EntityDef)
+                        {
+                            selected = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!selected)
+                {
+                    if (SelectionMode == MapSelectionMode.EntityPrecision)
+                    {
+                        var draw = gameFileCache.TryGetDrawable(CurMouseHit.EntityDef.Archetype);
+                        if (draw != null)
+                        {
+                            var matrix = (ori.ToMatrix());
+                            matrix.Row4 = new Vector4(camrel + camera.Position, 1.0f);
+                            Renderer.RenderSelectionOverlay(draw, matrix, new Color4(1.0f, 1.0f, 1.0f, 0.13f));
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    return;
+                }
+            }
 
             Renderer.RenderMouseHit(mode, ref camrel, ref bbmin, ref bbmax, ref scale, ref ori, bsphrad);
         }
@@ -1647,13 +1682,36 @@ namespace CodeWalker
 
             if (mode == BoundsShaderMode.Box)
             {
-                MapBox box = new MapBox();
-                box.CamRelPos = camrel;
-                box.BBMin = bbmin;
-                box.BBMax = bbmax;
-                box.Orientation = ori;
-                box.Scale = scale;
-                Renderer.SelectionBoxes.Add(box);
+                if ((SelectionMode == MapSelectionMode.EntityPrecision) && (ent != null) && (ent.Archetype != null))
+                {
+                    var draw = gameFileCache.TryGetDrawable(ent.Archetype);
+                    if (draw != null)
+                    {
+                        var matrix = (ori.ToMatrix());
+                        matrix.Row4 = new Vector4(camrel + camera.Position, 1.0f);
+                        Renderer.RenderSelectionOverlay(draw, matrix, new Color4(0.0f, 1.0f, 0.0f, 0.25f));
+                    }
+                    else
+                    {
+                        MapBox box = new MapBox();
+                        box.CamRelPos = camrel;
+                        box.BBMin = bbmin;
+                        box.BBMax = bbmax;
+                        box.Orientation = ori;
+                        box.Scale = scale;
+                        Renderer.SelectionBoxes.Add(box);
+                    }
+                }
+                else
+                {
+                    MapBox box = new MapBox();
+                    box.CamRelPos = camrel;
+                    box.BBMin = bbmin;
+                    box.BBMax = bbmax;
+                    box.Orientation = ori;
+                    box.Scale = scale;
+                    Renderer.SelectionBoxes.Add(box);
+                }
             }
             else if (mode == BoundsShaderMode.Sphere)
             {
@@ -2361,6 +2419,7 @@ namespace CodeWalker
 
             Renderer.RenderedDrawablesListEnable =
                 ((SelectionMode == MapSelectionMode.Entity) && MouseSelectEnabled) ||
+                ((SelectionMode == MapSelectionMode.EntityPrecision) && MouseSelectEnabled) ||
                 (SelectionMode == MapSelectionMode.EntityExtension) ||
                 (SelectionMode == MapSelectionMode.ArchetypeExtension);
 
@@ -2543,11 +2602,12 @@ namespace CodeWalker
 
 
 
+            bool usePrecision = (SelectionMode == MapSelectionMode.EntityPrecision);
             bool usegeomboxes = SelectByGeometry;
             var dmodels = drawable.DrawableModels?.High;
             if (dmodels == null)
             { usegeomboxes = false; }
-            if (usegeomboxes)
+            if (usegeomboxes && !usePrecision)
             {
                 for (int i = 0; i < dmodels.Length; i++)
                 {
@@ -2562,12 +2622,121 @@ namespace CodeWalker
             //transform the mouse ray into the entity space.
             orinv = Quaternion.Invert(orientation);
             mraytrn = new Ray();
-            mraytrn.Position = orinv.Multiply(camera.MouseRay.Position-camrel);
-            mraytrn.Direction = orinv.Multiply(camera.MouseRay.Direction);
+            if (usePrecision)
+            {
+                Vector3 invScale = Vector3.One;
+                if (scale.X != 0) invScale.X = 1.0f / scale.X;
+                if (scale.Y != 0) invScale.Y = 1.0f / scale.Y;
+                if (scale.Z != 0) invScale.Z = 1.0f / scale.Z;
+                mraytrn.Position = (orinv.Multiply(camera.MouseRay.Position - camrel)) * invScale;
+                mraytrn.Direction = (orinv.Multiply(camera.MouseRay.Direction)) * invScale;
+            }
+            else
+            {
+                mraytrn.Position = orinv.Multiply(camera.MouseRay.Position - camrel);
+                mraytrn.Direction = orinv.Multiply(camera.MouseRay.Direction);
+            }
             hitdist = 0.0f;
 
 
-            if (usegeomboxes)
+            if (usePrecision)
+            {
+                //per-triangle ray intersection version
+                float ghitdist = float.MaxValue;
+                if (dmodels != null)
+                {
+                    for (int i = 0; i < dmodels.Length; i++)
+                    {
+                        var m = dmodels[i];
+                        if (m.BoundsData != null)
+                        {
+                            int gbbcount = m.BoundsData.Length;
+                            for (int j = 0; j < gbbcount; j++) //first box seems to be whole model
+                            {
+                                var gbox = m.BoundsData[j];
+                                gbbox.Minimum = gbox.Min.XYZ();
+                                gbbox.Maximum = gbox.Max.XYZ();
+                                bbox.Minimum = gbbox.Minimum;
+                                bbox.Maximum = gbbox.Maximum;
+                                bool usehit = false;
+                                if (mraytrn.Intersects(ref bbox, out hitdist))
+                                {
+                                    if ((j == 0) && (gbbcount > 1)) continue; //ignore a model hit
+                                    if (hitdist > 0.0f)
+                                    {
+                                        int gind = (j > 0) ? j - 1 : 0;
+                                        var geom = m.Geometries[gind];
+                                        float meshdist = geom.RayIntersect(mraytrn, Math.Min(CurMouseHit.HitDist, ghitdist));
+                                        if (meshdist < float.MaxValue)
+                                        {
+                                            hitdist = meshdist;
+                                            bool nearer = ((hitdist < CurMouseHit.HitDist) && (hitdist < ghitdist));
+                                            bool radsm = true;
+                                            if (CurMouseHit.Geometry != null)
+                                            {
+                                                var b1 = (gbbox.Maximum - gbbox.Minimum) * scale;
+                                                var b2 = (CurMouseHit.AABB.Maximum - CurMouseHit.AABB.Minimum) * scale;
+                                                float r1 = b1.Length() * 0.5f;
+                                                float r2 = b2.Length() * 0.5f;
+                                                radsm = (r1 < r2);
+                                            }
+                                            if ((nearer && radsm) || radsm) usehit = true;
+                                        }
+                                    }
+                                }
+                                else if (j == 0) //no hit on model box
+                                {
+                                    break; //don't try this model's geometries
+                                }
+                                if (usehit)
+                                {
+                                    int gind = (j > 0) ? j - 1 : 0;
+                                    ghitdist = hitdist;
+                                    geometry = m.Geometries[gind];
+                                    geometryAABB = gbbox;
+                                    geometryIndex = gind;
+                                }
+                            }
+                        }
+                        else if (m.Geometries != null) //fallback when no BoundsData
+                        {
+                            for (int g = 0; g < m.Geometries.Length; g++)
+                            {
+                                var geom = m.Geometries[g];
+                                float meshdist = geom.RayIntersect(mraytrn, Math.Min(CurMouseHit.HitDist, ghitdist));
+                                if (meshdist < float.MaxValue)
+                                {
+                                    hitdist = meshdist;
+                                    bool nearer = ((hitdist < CurMouseHit.HitDist) && (hitdist < ghitdist));
+                                    bool radsm = true;
+                                    if (CurMouseHit.Geometry != null)
+                                    {
+                                        var b1 = (drawable.BoundingBoxMax - drawable.BoundingBoxMin) * scale;
+                                        var b2 = (CurMouseHit.AABB.Maximum - CurMouseHit.AABB.Minimum) * scale;
+                                        float r1 = b1.Length() * 0.5f;
+                                        float r2 = b2.Length() * 0.5f;
+                                        radsm = (r1 < r2);
+                                    }
+                                    if ((nearer && radsm) || radsm)
+                                    {
+                                        ghitdist = hitdist;
+                                        geometry = geom;
+                                        geometryAABB.Minimum = drawable.BoundingBoxMin;
+                                        geometryAABB.Maximum = drawable.BoundingBoxMax;
+                                        geometryIndex = g;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (geometry == null)
+                {
+                    return; //no triangle hit.
+                }
+                hitdist = ghitdist;
+            }
+            else if (usegeomboxes)
             {
                 //geometry bounding boxes version
                 float ghitdist = float.MaxValue;
@@ -5819,6 +5988,10 @@ namespace CodeWalker
                     mode = MapSelectionMode.Occlusion;
                     ToolbarSelectOcclusionButton.Checked = true;
                     break;
+                case "Entity Precision":
+                    mode = MapSelectionMode.EntityPrecision;
+                    ToolbarSelectEntityPrecisionButton.Checked = true;
+                    break;
 
             }
             SelectionMode = mode;
@@ -7703,6 +7876,12 @@ namespace CodeWalker
         private void ToolbarSelectOcclusionButton_Click(object sender, EventArgs e)
         {
             SetSelectionMode("Occlusion");
+            SetMouseSelect(true);
+        }
+
+        private void ToolbarSelectEntityPrecisionButton_Click(object sender, EventArgs e)
+        {
+            SetSelectionMode("Entity Precision");
             SetMouseSelect(true);
         }
 
