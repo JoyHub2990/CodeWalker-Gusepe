@@ -165,7 +165,7 @@ namespace CodeWalker
         SpaceRayIntersectResult MouseRayCollision = new SpaceRayIntersectResult();
 
         string SelectionModeStr = "Entity";
-        MapSelectionMode SelectionMode = MapSelectionMode.Entity;
+        MapSelectionMode SelectionMode = MapSelectionMode.EntityPrecision;
         MapSelection SelectedItem;
         MapSelection CopiedItem;
         WorldInfoForm InfoForm = null;
@@ -449,11 +449,11 @@ namespace CodeWalker
 
             UpdateMouseHits();
 
+            Renderer.RenderQueued();
+
             RenderSelection();
 
             RenderMoused();
-
-            Renderer.RenderQueued();
 
             Renderer.RenderBounds(SelectionMode);
 
@@ -1372,6 +1372,21 @@ namespace CodeWalker
                 Renderer.RenderSelectionArrowOutline(MouseRayCollision.Position, MouseRayCollision.Normal, arup, Quaternion.Identity, 1.0f, 0.05f, cgrn);
             }
 
+            // Entity Precision: draw selection overlay even when ShowSelectionBounds is off
+            if ((SelectionMode == MapSelectionMode.EntityPrecision) && selectionItem.EntityDef != null && selectionItem.Archetype != null)
+            {
+                var entOvl = selectionItem.EntityDef;
+                var draw = gameFileCache.TryGetDrawable(entOvl.Archetype);
+                if (draw != null)
+                {
+                    var oriOvl = entOvl.Orientation;
+                    var camrelOvl = entOvl.Position - camera.Position;
+                    var matrix = (oriOvl.ToMatrix());
+                    matrix.Row4 = new Vector4(camrelOvl + camera.Position, 1.0f);
+                    Renderer.RenderSelectionOverlay(draw, matrix, new Color4(0.0f, 1.0f, 0.0f, 0.25f));
+                }
+            }
+
             if (!ShowSelectionBounds)
             { return; }
 
@@ -1684,14 +1699,9 @@ namespace CodeWalker
             {
                 if ((SelectionMode == MapSelectionMode.EntityPrecision) && (ent != null) && (ent.Archetype != null))
                 {
+                    // Overlay already drawn above (before ShowSelectionBounds check); only add box fallback if drawable not loaded
                     var draw = gameFileCache.TryGetDrawable(ent.Archetype);
-                    if (draw != null)
-                    {
-                        var matrix = (ori.ToMatrix());
-                        matrix.Row4 = new Vector4(camrel + camera.Position, 1.0f);
-                        Renderer.RenderSelectionOverlay(draw, matrix, new Color4(0.0f, 1.0f, 0.0f, 0.25f));
-                    }
-                    else
+                    if (draw == null)
                     {
                         MapBox box = new MapBox();
                         box.CamRelPos = camrel;
@@ -5912,11 +5922,15 @@ namespace CodeWalker
                 }
             }
 
-            MapSelectionMode mode = MapSelectionMode.Entity;
+            MapSelectionMode mode = MapSelectionMode.EntityPrecision;
             switch (modestr)
             {
                 default:
                 case "Entity":
+                    mode = MapSelectionMode.EntityPrecision;
+                    ToolbarSelectEntityPrecisionButton.Checked = true;
+                    break;
+                case "Entity Legacy":
                     mode = MapSelectionMode.Entity;
                     ToolbarSelectEntityButton.Checked = true;
                     break;
@@ -5987,10 +6001,6 @@ namespace CodeWalker
                 case "Occlusion":
                     mode = MapSelectionMode.Occlusion;
                     ToolbarSelectOcclusionButton.Checked = true;
-                    break;
-                case "Entity Precision":
-                    mode = MapSelectionMode.EntityPrecision;
-                    ToolbarSelectEntityPrecisionButton.Checked = true;
                     break;
 
             }
@@ -7773,7 +7783,7 @@ namespace CodeWalker
 
         private void ToolbarSelectEntityButton_Click(object sender, EventArgs e)
         {
-            SetSelectionMode("Entity");
+            SetSelectionMode("Entity Legacy");
             SetMouseSelect(true);
         }
 
@@ -7881,7 +7891,7 @@ namespace CodeWalker
 
         private void ToolbarSelectEntityPrecisionButton_Click(object sender, EventArgs e)
         {
-            SetSelectionMode("Entity Precision");
+            SetSelectionMode("Entity");
             SetMouseSelect(true);
         }
 

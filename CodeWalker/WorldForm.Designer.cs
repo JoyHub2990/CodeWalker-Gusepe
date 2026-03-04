@@ -1108,6 +1108,7 @@ namespace CodeWalker
             this.SelectionModeComboBox.FormattingEnabled = true;
             this.SelectionModeComboBox.Items.AddRange(new object[] {
             "Entity",
+            "Entity Legacy",
             "Entity Extension",
             "Archetype Extension",
             "Time Cycle Modifier",
@@ -1124,8 +1125,7 @@ namespace CodeWalker
             "Mlo Instance",
             "Scenario",
             "Audio",
-            "Occlusion",
-            "Entity Precision"});
+            "Occlusion"});
             this.SelectionModeComboBox.Location = new System.Drawing.Point(51, 30);
             this.SelectionModeComboBox.Name = "SelectionModeComboBox";
             this.SelectionModeComboBox.Size = new System.Drawing.Size(121, 21);
@@ -3082,6 +3082,7 @@ namespace CodeWalker
             // 
             this.ToolbarSelectButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.ToolbarSelectButton.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ToolbarSelectEntityPrecisionButton,
             this.ToolbarSelectEntityButton,
             this.ToolbarSelectEntityExtensionButton,
             this.ToolbarSelectArchetypeExtensionButton,
@@ -3099,8 +3100,7 @@ namespace CodeWalker
             this.ToolbarSelectMloInstanceButton,
             this.ToolbarSelectScenarioButton,
             this.ToolbarSelectAudioButton,
-            this.ToolbarSelectOcclusionButton,
-            this.ToolbarSelectEntityPrecisionButton});
+            this.ToolbarSelectOcclusionButton});
             this.ToolbarSelectButton.Image = ((System.Drawing.Image)(resources.GetObject("ToolbarSelectButton.Image")));
             this.ToolbarSelectButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ToolbarSelectButton.Name = "ToolbarSelectButton";
@@ -3111,11 +3111,9 @@ namespace CodeWalker
             // 
             // ToolbarSelectEntityButton
             // 
-            this.ToolbarSelectEntityButton.Checked = true;
-            this.ToolbarSelectEntityButton.CheckState = System.Windows.Forms.CheckState.Checked;
             this.ToolbarSelectEntityButton.Name = "ToolbarSelectEntityButton";
             this.ToolbarSelectEntityButton.Size = new System.Drawing.Size(185, 22);
-            this.ToolbarSelectEntityButton.Text = "Entity";
+            this.ToolbarSelectEntityButton.Text = "Entity Legacy";
             this.ToolbarSelectEntityButton.Click += new System.EventHandler(this.ToolbarSelectEntityButton_Click);
             // 
             // ToolbarSelectEntityExtensionButton
@@ -3239,9 +3237,11 @@ namespace CodeWalker
             // 
             // ToolbarSelectEntityPrecisionButton
             // 
+            this.ToolbarSelectEntityPrecisionButton.Checked = true;
+            this.ToolbarSelectEntityPrecisionButton.CheckState = System.Windows.Forms.CheckState.Checked;
             this.ToolbarSelectEntityPrecisionButton.Name = "ToolbarSelectEntityPrecisionButton";
             this.ToolbarSelectEntityPrecisionButton.Size = new System.Drawing.Size(185, 22);
-            this.ToolbarSelectEntityPrecisionButton.Text = "Entity Precision";
+            this.ToolbarSelectEntityPrecisionButton.Text = "Entity";
             this.ToolbarSelectEntityPrecisionButton.Click += new System.EventHandler(this.ToolbarSelectEntityPrecisionButton_Click);
             // 
             // toolStripSeparator1
