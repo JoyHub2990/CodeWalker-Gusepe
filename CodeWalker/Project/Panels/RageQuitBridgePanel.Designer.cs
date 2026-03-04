@@ -194,6 +194,7 @@ namespace CodeWalker.Project.Panels
             this.WithPositionsCheckBox.AutoSize = true;
             this.WithPositionsCheckBox.Location = new System.Drawing.Point(136, 104);
             this.WithPositionsCheckBox.Name = "WithPositionsCheckBox";
+            // EntityListView
             this.WithPositionsCheckBox.Text = "With positions";
             this.WithPositionsCheckBox.UseVisualStyleBackColor = true;
 
