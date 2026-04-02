@@ -31,6 +31,14 @@ namespace CodeWalker.Project.Panels
         private readonly Dictionary<string, string> _ymapList =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        // YMAP → YmapFile reference, populated when adding to the list.
+        private readonly Dictionary<string, YmapFile> _ymapFileRefs =
+            new Dictionary<string, YmapFile>(StringComparer.OrdinalIgnoreCase);
+
+        // YMAP paths currently hidden in the viewport (toggled by the Hide button).
+        private readonly HashSet<string> _hiddenYmapPaths =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         // YBN list: key = YBN name (case-insensitive, deduped — same file once)
         private readonly HashSet<string> _ybnList =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -77,9 +85,9 @@ namespace CodeWalker.Project.Panels
 
         // ── YMAP extraction ───────────────────────────────────────────────────
 
-        private List<(string Path, string Filename)> GetYmapsFromSelection(object item)
+        private List<(string Path, string Filename, YmapFile YmapRef)> GetYmapsFromSelection(object item)
         {
-            var result = new List<(string, string)>();
+            var result = new List<(string, string, YmapFile)>();
             if (item == null) return result;
 
             if (item is object[] arr)
@@ -91,7 +99,7 @@ namespace CodeWalker.Project.Panels
             {
                 string path = ymap.FilePath ?? ymap.RpfFileEntry?.Path ?? "";
                 string name = ymap.Name ?? System.IO.Path.GetFileName(path);
-                if (!string.IsNullOrEmpty(path)) result.Add((path, name));
+                if (!string.IsNullOrEmpty(path)) result.Add((path, name, ymap));
             }
             return result;
         }
@@ -134,12 +142,26 @@ namespace CodeWalker.Project.Panels
             YmapListView.Items.Clear();
             foreach (var kvp in _ymapList)
             {
-                var lvi = new ListViewItem(kvp.Value);
+                bool hidden = _hiddenYmapPaths.Contains(kvp.Key);
+                var lvi = new ListViewItem(hidden ? "○ " + kvp.Value : "● " + kvp.Value);
                 lvi.SubItems.Add(kvp.Key);
                 lvi.Tag = kvp.Key;
+                if (hidden)
+                {
+                    lvi.ForeColor = System.Drawing.Color.Gray;
+                    lvi.Font = new System.Drawing.Font(YmapListView.Font, System.Drawing.FontStyle.Strikeout);
+                }
                 YmapListView.Items.Add(lvi);
             }
-            YmapCountLabel.Text = $"{_ymapList.Count} YMAP(s)";
+            YmapCountLabel.Text = $"{_ymapList.Count} YMAP(s) ({_hiddenYmapPaths.Count} hidden)";
+
+            // Button label reflects next action: Show when all hidden, Hide otherwise.
+            if (_ymapList.Count == 0)
+                YmapHideButton.Text = "o Hide";
+            else if (_ymapList.Keys.All(p => _hiddenYmapPaths.Contains(p)))
+                YmapHideButton.Text = "o Show";
+            else
+                YmapHideButton.Text = "o Hide";
         }
 
         // ── JSON builders ─────────────────────────────────────────────────────
@@ -288,11 +310,20 @@ namespace CodeWalker.Project.Panels
         /// </summary>
         public void PopulateHiddenEntities()
         {
-            if (_hiddenEntities.Count == 0) return;
+            if (_hiddenEntities.Count == 0 && _hiddenYmapPaths.Count == 0) return;
             var renderer = ProjectForm?.WorldForm?.Renderer;
             if (renderer == null) return;
+
             foreach (var ent in _hiddenEntities)
                 renderer.RenderHideEntity(ent);
+
+            foreach (var path in _hiddenYmapPaths)
+            {
+                if (!_ymapFileRefs.TryGetValue(path, out var ymap)) continue;
+                if (ymap.AllEntities == null) continue;
+                foreach (var ent in ymap.AllEntities)
+                    renderer.RenderHideEntity(ent);
+            }
         }
 
         private async void SendListButton_Click(object sender, EventArgs e)
@@ -344,8 +375,15 @@ namespace CodeWalker.Project.Panels
             if (ymaps.Count == 0) { SetStatus("No YMAP selected in the Project Explorer."); return; }
 
             int added = 0;
-            foreach (var (path, filename) in ymaps)
-                if (!_ymapList.ContainsKey(path)) { _ymapList[path] = filename; added++; }
+            foreach (var (path, filename, ymapRef) in ymaps)
+            {
+                if (!_ymapList.ContainsKey(path))
+                {
+                    _ymapList[path] = filename;
+                    if (ymapRef != null) _ymapFileRefs[path] = ymapRef;
+                    added++;
+                }
+            }
 
             RefreshYmapList();
             SetStatus($"Added {added} YMAP(s) ({ymaps.Count - added} already in list).");
@@ -354,10 +392,37 @@ namespace CodeWalker.Project.Panels
         private void YmapRemoveButton_Click(object sender, EventArgs e)
         {
             foreach (ListViewItem lvi in YmapListView.SelectedItems)
-                if (lvi.Tag is string path) _ymapList.Remove(path);
+            {
+                if (lvi.Tag is string path)
+                {
+                    _ymapList.Remove(path);
+                    _ymapFileRefs.Remove(path);
+                    _hiddenYmapPaths.Remove(path);
+                }
+            }
 
             RefreshYmapList();
             SetStatus("Removed selected YMAP(s).");
+        }
+
+        private void YmapHideButton_Click(object sender, EventArgs e)
+        {
+            if (_ymapList.Count == 0) { SetStatus("List is empty — add YMAPs first."); return; }
+
+            // Toggle entire list: if all are hidden → show all; otherwise → hide all.
+            bool allHidden = _ymapList.Keys.All(p => _hiddenYmapPaths.Contains(p));
+            if (allHidden)
+            {
+                _hiddenYmapPaths.Clear();
+                SetStatus($"Showed all {_ymapList.Count} YMAP(s) in viewport.");
+            }
+            else
+            {
+                foreach (var path in _ymapList.Keys) _hiddenYmapPaths.Add(path);
+                SetStatus($"Hidden all {_ymapList.Count} YMAP(s) from viewport.");
+            }
+
+            RefreshYmapList();
         }
 
         private async void YmapSendButton_Click(object sender, EventArgs e)
@@ -378,6 +443,8 @@ namespace CodeWalker.Project.Panels
         private void YmapClearButton_Click(object sender, EventArgs e)
         {
             _ymapList.Clear();
+            _ymapFileRefs.Clear();
+            _hiddenYmapPaths.Clear();
             RefreshYmapList();
             SetStatus("YMAP list cleared.");
         }

@@ -46,6 +46,7 @@ namespace CodeWalker.Project.Panels
             this.YmapRemoveButton       = new System.Windows.Forms.Button();
             this.YmapSendButton         = new System.Windows.Forms.Button();
             this.YmapClearButton        = new System.Windows.Forms.Button();
+            this.YmapHideButton         = new System.Windows.Forms.Button();
 
             // ── YBN tab ───────────────────────────────────────────────────────
             this.YbnTabPage             = new System.Windows.Forms.TabPage();
@@ -237,6 +238,7 @@ namespace CodeWalker.Project.Panels
             this.YmapButtonsPanel.Controls.Add(this.YmapRemoveButton);
             this.YmapButtonsPanel.Controls.Add(this.YmapSendButton);
             this.YmapButtonsPanel.Controls.Add(this.YmapClearButton);
+            this.YmapButtonsPanel.Controls.Add(this.YmapHideButton);
             this.YmapButtonsPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.YmapButtonsPanel.Height = 52;
             this.YmapButtonsPanel.Name = "YmapButtonsPanel";
@@ -273,6 +275,13 @@ namespace CodeWalker.Project.Panels
             this.YmapClearButton.Text = "Clear";
             this.YmapClearButton.UseVisualStyleBackColor = true;
             this.YmapClearButton.Click += new System.EventHandler(this.YmapClearButton_Click);
+
+            this.YmapHideButton.Location = new System.Drawing.Point(360, 18);
+            this.YmapHideButton.Size = new System.Drawing.Size(62, 24);
+            this.YmapHideButton.Name = "YmapHideButton";
+            this.YmapHideButton.Text = "o Hide";
+            this.YmapHideButton.UseVisualStyleBackColor = true;
+            this.YmapHideButton.Click += new System.EventHandler(this.YmapHideButton_Click);
 
             this.YmapListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
                 this.ColYmapFilename, this.ColYmapPath });
@@ -427,6 +436,7 @@ namespace CodeWalker.Project.Panels
         private System.Windows.Forms.Button      YmapRemoveButton;
         private System.Windows.Forms.Button      YmapSendButton;
         private System.Windows.Forms.Button      YmapClearButton;
+        private System.Windows.Forms.Button      YmapHideButton;
 
         // YBN
         private System.Windows.Forms.TabPage     YbnTabPage;
