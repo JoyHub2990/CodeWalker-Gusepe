@@ -369,6 +369,37 @@ namespace CodeWalker.Project.Panels
 
         // ── YMAP handlers ─────────────────────────────────────────────────────
 
+        private void YmapAddFromSelectionButton_Click(object sender, EventArgs e)
+        {
+            var entities = GetViewportSelection();
+            if (entities.Count == 0) { SetStatus("No entity selected in the viewport."); return; }
+
+            var ymapSet = entities
+                .Select(ent => ent.Ymap)
+                .Where(ymap => ymap != null)
+                .Distinct()
+                .ToList();
+
+            if (ymapSet.Count == 0) { SetStatus("Selected entity has no parent YMAP."); return; }
+
+            int added = 0;
+            foreach (var ymap in ymapSet)
+            {
+                foreach (var (path, filename, ymapRef) in GetYmapsFromSelection(ymap))
+                {
+                    if (!_ymapList.ContainsKey(path))
+                    {
+                        _ymapList[path] = filename;
+                        if (ymapRef != null) _ymapFileRefs[path] = ymapRef;
+                        added++;
+                    }
+                }
+            }
+
+            RefreshYmapList();
+            SetStatus($"Added {added} YMAP(s) from viewport selection.");
+        }
+
         private void YmapAddButton_Click(object sender, EventArgs e)
         {
             var ymaps = GetYmapsFromSelection(_lastExplorerSelection);

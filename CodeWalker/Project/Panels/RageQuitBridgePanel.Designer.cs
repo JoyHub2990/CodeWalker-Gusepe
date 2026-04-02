@@ -44,6 +44,7 @@ namespace CodeWalker.Project.Panels
             this.YmapCountLabel         = new System.Windows.Forms.Label();
             this.YmapAddButton          = new System.Windows.Forms.Button();
             this.YmapRemoveButton       = new System.Windows.Forms.Button();
+            this.YmapAddFromSelectionButton = new System.Windows.Forms.Button();
             this.YmapSendButton         = new System.Windows.Forms.Button();
             this.YmapClearButton        = new System.Windows.Forms.Button();
             this.YmapHideButton         = new System.Windows.Forms.Button();
@@ -139,7 +140,7 @@ namespace CodeWalker.Project.Panels
             this.EntityButtonsPanel.Controls.Add(this.ImportAsAssetCheckBox);
             this.EntityButtonsPanel.Controls.Add(this.WithPositionsCheckBox);
             this.EntityButtonsPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.EntityButtonsPanel.Height = 128;
+            this.EntityButtonsPanel.Size = new System.Drawing.Size(500, 128);
             this.EntityButtonsPanel.Name = "EntityButtonsPanel";
 
             this.EntityCountLabel.AutoSize = true;
@@ -235,12 +236,13 @@ namespace CodeWalker.Project.Panels
 
             this.YmapButtonsPanel.Controls.Add(this.YmapCountLabel);
             this.YmapButtonsPanel.Controls.Add(this.YmapAddButton);
+            this.YmapButtonsPanel.Controls.Add(this.YmapAddFromSelectionButton);
             this.YmapButtonsPanel.Controls.Add(this.YmapRemoveButton);
-            this.YmapButtonsPanel.Controls.Add(this.YmapSendButton);
             this.YmapButtonsPanel.Controls.Add(this.YmapClearButton);
             this.YmapButtonsPanel.Controls.Add(this.YmapHideButton);
+            this.YmapButtonsPanel.Controls.Add(this.YmapSendButton);
             this.YmapButtonsPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.YmapButtonsPanel.Height = 52;
+            this.YmapButtonsPanel.Size = new System.Drawing.Size(500, 76);
             this.YmapButtonsPanel.Name = "YmapButtonsPanel";
 
             this.YmapCountLabel.AutoSize = true;
@@ -248,6 +250,7 @@ namespace CodeWalker.Project.Panels
             this.YmapCountLabel.Name = "YmapCountLabel";
             this.YmapCountLabel.Text = "0 YMAP(s)";
 
+            // Row 1 (y=18): [Add from Explorer] [Add from Selection] [Remove] [Clear] [o Hide]
             this.YmapAddButton.Location = new System.Drawing.Point(4, 18);
             this.YmapAddButton.Size = new System.Drawing.Size(118, 24);
             this.YmapAddButton.Name = "YmapAddButton";
@@ -255,33 +258,43 @@ namespace CodeWalker.Project.Panels
             this.YmapAddButton.UseVisualStyleBackColor = true;
             this.YmapAddButton.Click += new System.EventHandler(this.YmapAddButton_Click);
 
-            this.YmapRemoveButton.Location = new System.Drawing.Point(126, 18);
+            this.YmapAddFromSelectionButton.Location = new System.Drawing.Point(126, 18);
+            this.YmapAddFromSelectionButton.Size = new System.Drawing.Size(118, 24);
+            this.YmapAddFromSelectionButton.Name = "YmapAddFromSelectionButton";
+            this.YmapAddFromSelectionButton.Text = "Add from Selection";
+            this.YmapAddFromSelectionButton.UseVisualStyleBackColor = true;
+            this.YmapAddFromSelectionButton.Click += new System.EventHandler(this.YmapAddFromSelectionButton_Click);
+
+            this.YmapRemoveButton.Location = new System.Drawing.Point(248, 18);
             this.YmapRemoveButton.Size = new System.Drawing.Size(66, 24);
             this.YmapRemoveButton.Name = "YmapRemoveButton";
             this.YmapRemoveButton.Text = "Remove";
             this.YmapRemoveButton.UseVisualStyleBackColor = true;
             this.YmapRemoveButton.Click += new System.EventHandler(this.YmapRemoveButton_Click);
 
-            this.YmapSendButton.Location = new System.Drawing.Point(196, 18);
-            this.YmapSendButton.Size = new System.Drawing.Size(100, 24);
-            this.YmapSendButton.Name = "YmapSendButton";
-            this.YmapSendButton.Text = "Send to Blender";
-            this.YmapSendButton.UseVisualStyleBackColor = true;
-            this.YmapSendButton.Click += new System.EventHandler(this.YmapSendButton_Click);
-
-            this.YmapClearButton.Location = new System.Drawing.Point(300, 18);
+            this.YmapClearButton.Location = new System.Drawing.Point(318, 18);
             this.YmapClearButton.Size = new System.Drawing.Size(56, 24);
             this.YmapClearButton.Name = "YmapClearButton";
             this.YmapClearButton.Text = "Clear";
             this.YmapClearButton.UseVisualStyleBackColor = true;
             this.YmapClearButton.Click += new System.EventHandler(this.YmapClearButton_Click);
 
-            this.YmapHideButton.Location = new System.Drawing.Point(360, 18);
+            this.YmapHideButton.Location = new System.Drawing.Point(378, 18);
             this.YmapHideButton.Size = new System.Drawing.Size(62, 24);
             this.YmapHideButton.Name = "YmapHideButton";
             this.YmapHideButton.Text = "o Hide";
             this.YmapHideButton.UseVisualStyleBackColor = true;
             this.YmapHideButton.Click += new System.EventHandler(this.YmapHideButton_Click);
+
+            // Row 2 (y=46): [Send to Blender ── full width ──]
+            this.YmapSendButton.Anchor = System.Windows.Forms.AnchorStyles.Top
+                | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.YmapSendButton.Location = new System.Drawing.Point(4, 46);
+            this.YmapSendButton.Size = new System.Drawing.Size(490, 24);
+            this.YmapSendButton.Name = "YmapSendButton";
+            this.YmapSendButton.Text = "Send to Blender";
+            this.YmapSendButton.UseVisualStyleBackColor = true;
+            this.YmapSendButton.Click += new System.EventHandler(this.YmapSendButton_Click);
 
             this.YmapListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
                 this.ColYmapFilename, this.ColYmapPath });
@@ -433,6 +446,7 @@ namespace CodeWalker.Project.Panels
         private System.Windows.Forms.Panel       YmapButtonsPanel;
         private System.Windows.Forms.Label       YmapCountLabel;
         private System.Windows.Forms.Button      YmapAddButton;
+        private System.Windows.Forms.Button      YmapAddFromSelectionButton;
         private System.Windows.Forms.Button      YmapRemoveButton;
         private System.Windows.Forms.Button      YmapSendButton;
         private System.Windows.Forms.Button      YmapClearButton;
