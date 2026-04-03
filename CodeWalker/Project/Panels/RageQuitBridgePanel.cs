@@ -106,6 +106,23 @@ namespace CodeWalker.Project.Panels
 
         // ── ListView refresh ──────────────────────────────────────────────────
 
+        /// <summary>
+        /// Returns the DrawableDict (YDD) name for an entity if its archetype references one,
+        /// or an empty string if the drawable is a standalone YDR.
+        /// </summary>
+        private static string GetEntityYddName(YmapEntityDef ent) =>
+            ent.Archetype?.DrawableDict.ToCleanString() ?? string.Empty;
+
+        /// <summary>
+        /// Returns the file asset name to send to Blender: the YDD name if the entity's
+        /// drawable belongs to a DrawableDict, otherwise the entity's own drawable name.
+        /// </summary>
+        private static string GetEntityAssetName(YmapEntityDef ent)
+        {
+            var ydd = GetEntityYddName(ent);
+            return string.IsNullOrEmpty(ydd) ? ent.Name : ydd;
+        }
+
         private void RefreshEntityList()
         {
             var ic = CultureInfo.InvariantCulture;
@@ -116,6 +133,7 @@ namespace CodeWalker.Project.Panels
                 var ori = ent.Orientation;
                 bool hidden = _hiddenEntities.Contains(ent);
                 var lvi = new ListViewItem(hidden ? "○ " + ent.Name : "● " + ent.Name);
+                lvi.SubItems.Add(GetEntityYddName(ent));
                 lvi.SubItems.Add(string.Format(ic, "{0:F1}, {1:F1}, {2:F1}", pos.X, pos.Y, pos.Z));
                 lvi.SubItems.Add(string.Format(ic, "{0:F2}, {1:F2}, {2:F2}, {3:F2}", ori.X, ori.Y, ori.Z, ori.W));
                 lvi.Tag = ent;
@@ -182,8 +200,15 @@ namespace CodeWalker.Project.Panels
                     first = false;
                     var pos = ent.Position;
                     var ori = ent.Orientation;
+                    // "name" = the file Blender imports: YDD when the drawable lives inside
+                    // a DrawableDict, otherwise the standalone YDR name.
+                    // "drawable" = the specific entry within the YDD (omitted for plain YDRs).
+                    string assetName = GetEntityAssetName(ent);
+                    string yddName   = GetEntityYddName(ent);
                     sb.Append("{");
-                    sb.Append($"\"name\":\"{EscapeJson(ent.Name)}\",");
+                    sb.Append($"\"name\":\"{EscapeJson(assetName)}\",");
+                    if (!string.IsNullOrEmpty(yddName))
+                        sb.Append($"\"drawable\":\"{EscapeJson(ent.Name)}\",");
                     sb.AppendFormat(ic, "\"position\":{{\"x\":{0},\"y\":{1},\"z\":{2}}},", pos.X, pos.Y, pos.Z);
                     sb.AppendFormat(ic, "\"rotation\":{{\"x\":{0},\"y\":{1},\"z\":{2},\"w\":{3}}}", ori.X, ori.Y, ori.Z, ori.W);
                     sb.Append("}");
@@ -192,16 +217,18 @@ namespace CodeWalker.Project.Panels
             }
             else
             {
-                // Assets-only mode: deduplicate by name so Blender only downloads each file once.
+                // Assets-only mode: deduplicate by asset name so Blender only downloads
+                // each file once. Uses YDD name when available, otherwise the YDR name.
                 sb.Append($"{{\"import_as_asset\":{assetFlag},\"assets\":[");
                 bool first = true;
                 var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var ent in entities)
                 {
-                    if (!seen.Add(ent.Name)) continue;
+                    string assetName = GetEntityAssetName(ent);
+                    if (!seen.Add(assetName)) continue;
                     if (!first) sb.Append(",");
                     first = false;
-                    sb.Append($"\"{EscapeJson(ent.Name)}\"");
+                    sb.Append($"\"{EscapeJson(assetName)}\"");
                 }
                 sb.Append("]}");
             }

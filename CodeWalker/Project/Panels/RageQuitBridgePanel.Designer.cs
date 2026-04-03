@@ -22,6 +22,7 @@ namespace CodeWalker.Project.Panels
             this.EntitiesTabPage        = new System.Windows.Forms.TabPage();
             this.EntityListView         = new System.Windows.Forms.ListView();
             this.ColName                = new System.Windows.Forms.ColumnHeader();
+            this.ColParentYdd           = new System.Windows.Forms.ColumnHeader();
             this.ColPosition            = new System.Windows.Forms.ColumnHeader();
             this.ColRotation            = new System.Windows.Forms.ColumnHeader();
             this.EntityButtonsPanel     = new System.Windows.Forms.Panel();
@@ -210,7 +211,7 @@ namespace CodeWalker.Project.Panels
             this.WithPositionsCheckBox.UseVisualStyleBackColor = true;
 
             this.EntityListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-                this.ColName, this.ColPosition, this.ColRotation });
+                this.ColName, this.ColParentYdd, this.ColPosition, this.ColRotation });
             this.EntityListView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.EntityListView.FullRowSelect = true;
             this.EntityListView.GridLines = true;
@@ -218,10 +219,12 @@ namespace CodeWalker.Project.Panels
             this.EntityListView.Name = "EntityListView";
             this.EntityListView.UseCompatibleStateImageBehavior = false;
 
-            this.ColName.Text = "Asset Name";
-            this.ColName.Width = 160;
+            this.ColName.Text = "Drawable";
+            this.ColName.Width = 140;
+            this.ColParentYdd.Text = "Parent YDD";
+            this.ColParentYdd.Width = 120;
             this.ColPosition.Text = "Position";
-            this.ColPosition.Width = 120;
+            this.ColPosition.Width = 110;
             this.ColRotation.Text = "Rotation (X,Y,Z,W)";
             this.ColRotation.Width = 140;
 
@@ -425,6 +428,7 @@ namespace CodeWalker.Project.Panels
         private System.Windows.Forms.TabPage     EntitiesTabPage;
         private System.Windows.Forms.ListView    EntityListView;
         private System.Windows.Forms.ColumnHeader ColName;
+        private System.Windows.Forms.ColumnHeader ColParentYdd;
         private System.Windows.Forms.ColumnHeader ColPosition;
         private System.Windows.Forms.ColumnHeader ColRotation;
         private System.Windows.Forms.Panel       EntityButtonsPanel;
