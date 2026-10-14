@@ -52,6 +52,13 @@ namespace CodeWalker.Project.Panels
         {
             ProjectForm = projectForm;
             InitializeComponent();
+            var zonePanel = new RageQuitZonePanel(projectForm);
+            var zoneTab = new TabPage("Zone package");
+            zoneTab.Controls.Add(zonePanel);
+            MainTabControl.TabPages.Add(zoneTab);
+            projectForm.WorldForm.ZoneCapturePanel = zonePanel;
+            MainTabControl.SelectedIndexChanged += (_, __) =>
+            { if (MainTabControl.SelectedTab != zoneTab && zonePanel.Interacting) zonePanel.StopDrawing(); };
         }
 
         // ── Explorer selection bridge ─────────────────────────────────────────

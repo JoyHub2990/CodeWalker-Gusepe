@@ -39,6 +39,7 @@ namespace CodeWalker
         CalmingQuad = 20,
         WaveQuad = 21,
         EntityPrecision = 22,
+        ZonePoints = 23,
     }
 
 

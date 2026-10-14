@@ -142,6 +142,9 @@ namespace CodeWalker.Rendering
         public List<MapSphere> WhiteSpheres = new List<MapSphere>();
         public List<VertexTypePC> SelectionLineVerts = new List<VertexTypePC>();
         public List<VertexTypePC> SelectionTriVerts = new List<VertexTypePC>();
+        private readonly List<VertexTypePC> zoneFillVerts = new List<VertexTypePC>();
+        private readonly List<VertexTypePC> zoneLineVerts = new List<VertexTypePC>();
+        private readonly List<VertexTypePC> zoneHandleVerts = new List<VertexTypePC>();
 
 
         private YmapEntityDef SelectedCarGenEntity = new YmapEntityDef(); //placeholder entity object for drawing cars
@@ -156,6 +159,8 @@ namespace CodeWalker.Rendering
 
 
         public List<RenderedDrawable> RenderedDrawables = new List<RenderedDrawable>(); //queued here for later hit tests...
+        public bool ZonePickingEnabled;
+        public readonly List<ZonePickGeometry> ZonePickGeometries = new List<ZonePickGeometry>();
         public List<RenderedBoundComposite> RenderedBoundComps = new List<RenderedBoundComposite>();
         public bool RenderedDrawablesListEnable = false; //whether or not to add rendered drawables to the list
         public bool RenderedBoundCompsListEnable = false; //whether or not to add rendered bound comps to the list
@@ -300,6 +305,7 @@ namespace CodeWalker.Rendering
             BoundingSpheres.Clear();
 
             RenderedDrawables.Clear();
+            ZonePickGeometries.Clear();
             RenderedBoundComps.Clear();
 
             renderskeletonlist.Clear();
@@ -1322,6 +1328,69 @@ namespace CodeWalker.Rendering
             }
 
             shaders.SetDefaultBlendState(context);
+            shaders.SetRasterizerMode(context, RasterizerMode.Solid);
+        }
+
+        /// <summary>Transient editor overlay. Uses the shared dynamic path buffer, no scene meshes or game entities.</summary>
+        public void RenderZoneOverlay(Vector3[] points, Vector3[] floor, float minZ, float maxZ, bool valid, int selected, bool handles)
+        {
+            if (points.Length == 0) return;
+            zoneFillVerts.Clear(); zoneLineVerts.Clear(); zoneHandleVerts.Clear();
+            uint lineColour = valid ? 0xFFEBAA30u : 0xFF4040FFu;
+            void Line(Vector3 a, Vector3 b) { zoneLineVerts.Add(new VertexTypePC { Position = a, Colour = lineColour }); zoneLineVerts.Add(new VertexTypePC { Position = b, Colour = lineColour }); }
+            void Triangle(List<VertexTypePC> list, Vector3 a, Vector3 b, Vector3 c, uint colour)
+            { list.Add(new VertexTypePC { Position = a, Colour = colour }); list.Add(new VertexTypePC { Position = b, Colour = colour }); list.Add(new VertexTypePC { Position = c, Colour = colour }); }
+            var faces = new List<Vector3[]>();
+            if (valid)
+            {
+                for (int i = 0; i + 2 < floor.Length; i += 3)
+                {
+                    var a = floor[i]; var b = floor[i + 1]; var c = floor[i + 2];
+                    faces.Add(new[] { a, b, c });
+                    a.Z = b.Z = c.Z = maxZ; faces.Add(new[] { a, c, b });
+                }
+            }
+            for (int i = 0; i < points.Length; i++)
+            {
+                var a = points[i]; var b = points[(i + 1) % points.Length];
+                if (points.Length > 1 && (valid || i + 1 < points.Length)) Line(a, b);
+                var loA = new Vector3(a.X, a.Y, minZ); var loB = new Vector3(b.X, b.Y, minZ);
+                var hiA = new Vector3(a.X, a.Y, maxZ); var hiB = new Vector3(b.X, b.Y, maxZ);
+                if (valid)
+                {
+                    Line(loA, loB); Line(hiA, hiB); Line(loA, hiA);
+                    faces.Add(new[] { loA, hiA, hiB }); faces.Add(new[] { loA, hiB, loB });
+                }
+                if (!handles) continue;
+                var clip = Vector4.Transform(new Vector4(a - camera.Position, 1), camera.ViewProjMatrix);
+                if (clip.W <= 0) continue;
+                var ndc = clip.XYZ() / clip.W;
+                if (ndc.Z < 0 || ndc.Z > 1) continue;
+                // Eight-pixel shaded sphere impostors. Size and hit area stay stable with zoom/perspective.
+                var right = Vector3.TransformCoordinate(ndc + new Vector3(16f / Math.Max(1, camera.Width), 0, 0), camera.ViewProjInvMatrix) + camera.Position - a;
+                var up = Vector3.TransformCoordinate(ndc + new Vector3(0, 16f / Math.Max(1, camera.Height), 0), camera.ViewProjInvMatrix) + camera.Position - a;
+                uint edge = i == selected ? 0xFF158FFFu : 0xFFE65A18u;
+                uint center = i == selected ? 0xFFCEFFFFu : 0xFFFFCD7Du;
+                for (int segment = 0; segment < 20; segment++)
+                {
+                    float angle = segment * (float)Math.PI / 10, next = (segment + 1) * (float)Math.PI / 10;
+                    var p = a + right * (float)Math.Cos(angle) + up * (float)Math.Sin(angle);
+                    var q = a + right * (float)Math.Cos(next) + up * (float)Math.Sin(next);
+                    zoneHandleVerts.Add(new VertexTypePC { Position = a - right * .2f + up * .2f, Colour = center });
+                    zoneHandleVerts.Add(new VertexTypePC { Position = p, Colour = edge }); zoneHandleVerts.Add(new VertexTypePC { Position = q, Colour = edge });
+                }
+            }
+            foreach (var face in faces.OrderByDescending(f => ((f[0] + f[1] + f[2]) / 3 - camera.Position).LengthSquared()))
+                Triangle(zoneFillVerts, face[0], face[1], face[2], 0x24D58B20);
+            shaders.SetDefaultBlendState(context); // Source-alpha blending without alpha-to-coverage.
+            shaders.SetRasterizerMode(context, RasterizerMode.SolidDblSided);
+            shaders.SetDepthStencilMode(context, DepthStencilMode.DisableWrite);
+            shaders.Paths.RenderTriangles(context, zoneFillVerts, camera, shaders.GlobalLights);
+            shaders.SetDepthStencilMode(context, DepthStencilMode.DisableAll);
+            shaders.Paths.RenderLines(context, zoneLineVerts, camera, shaders.GlobalLights);
+            shaders.Paths.RenderTriangles(context, zoneHandleVerts, camera, shaders.GlobalLights);
+            shaders.Paths.UnbindResources(context);
+            shaders.SetDepthStencilMode(context, DepthStencilMode.Enabled);
             shaders.SetRasterizerMode(context, RasterizerMode.Solid);
         }
 
@@ -3455,6 +3524,12 @@ namespace CodeWalker.Rendering
 
                         rginst.Geom = geom;
 
+                        if (ZonePickingEnabled && !model.IsSkinMesh && rndbl.Cloth == null)
+                        {
+                            var world = Matrix.Scaling(scale) * Matrix.RotationQuaternion(orientation) * Matrix.Translation(position);
+                            ZonePickGeometries.Add(new ZonePickGeometry { Geometry = dgeom, Transform = (model.UseTransform ? model.Transform : Matrix.Identity) * world });
+                        }
+
                         shaders.Enqueue(ref rginst);
                     }
                 }
@@ -4018,6 +4093,11 @@ namespace CodeWalker.Rendering
         public DrawableBase Drawable;
         public Archetype Archetype;
         public YmapEntityDef Entity;
+    }
+    public struct ZonePickGeometry
+    {
+        public DrawableGeometry Geometry;
+        public Matrix Transform;
     }
     public struct RenderedBoundComposite
     {

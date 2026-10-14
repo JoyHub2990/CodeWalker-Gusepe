@@ -263,6 +263,7 @@ namespace CodeWalker
             ViewModeComboBox.SelectedIndex = startupviewmode;
             BoundsStyleComboBox.SelectedIndex = 0; //LoadSettings will handle this
 
+            InitializeZoneSelection();
             SelectionModeComboBox.SelectedIndex = 0; //Entity mode
             ShowSelectedExtensionTab(false);
 
@@ -453,19 +454,20 @@ namespace CodeWalker
 
             Renderer.RenderQueued();
 
-            RenderSelection();
+            if (!ZoneInteraction) RenderSelection();
 
-            RenderMoused();
+            if (!ZoneInteraction) RenderMoused();
 
             Renderer.RenderBounds(SelectionMode);
 
             Renderer.RenderSelectionGeometry(SelectionMode);
+            RenderZoneCapture();
 
             Renderer.RenderFinalPass();
 
             RenderMarkers();
 
-            RenderWidgets();
+            if (!ZoneInteraction) RenderWidgets();
 
             Renderer.EndRender();
 
@@ -1780,6 +1782,7 @@ namespace CodeWalker
         }
         private void UpdateWidgets()
         {
+            if (ZoneInteraction) return;
             if (!ShowWidget) return;
 
             Widget.Update(camera);
@@ -2406,6 +2409,15 @@ namespace CodeWalker
         {
             //reset variables for beginning the mouse hit test
             CurMouseHit.Clear();
+            Renderer.ZonePickingEnabled = ZoneInteraction;
+
+            if (ZoneInteraction)
+            {
+                ControlBrushEnabled = false; MouseRayCollisionVisible = false;
+                Renderer.RenderedDrawablesListEnable = true;
+                Renderer.RenderedBoundCompsListEnable = false;
+                return;
+            }
 
          
             if (Input.CtrlPressed && ProjectForm != null && ProjectForm.CanPaintInstances())   // Get whether or not we can brush from the project form.
@@ -2460,6 +2472,7 @@ namespace CodeWalker
 
         private void UpdateMouseHits()
         {
+            if (ZoneInteraction) return;
             UpdateMouseHitsFromRenderer();
             UpdateMouseHitsFromSpace();
             UpdateMouseHitsFromProject();
@@ -5155,6 +5168,7 @@ namespace CodeWalker
         }
         private void Undo()
         {
+            if (ZoneInteraction) { ZoneCapturePanel.UndoPoint(); return; }
             if (UndoSteps.Count == 0) return;
             var s = UndoSteps.Pop();
             RedoSteps.Push(s);
@@ -5170,6 +5184,7 @@ namespace CodeWalker
         }
         private void Redo()
         {
+            if (ZoneInteraction) return;
             if (RedoSteps.Count == 0) return;
             var s = RedoSteps.Pop();
             UndoSteps.Push(s);
@@ -5464,6 +5479,7 @@ namespace CodeWalker
         }
         private void DeleteItem()
         {
+            if (ZoneInteraction) { ZoneCapturePanel.DeletePoint(); return; }
             if (ProjectForm != null)
             {
                 ProjectForm.DeleteObject(SelectedItem);
@@ -5914,6 +5930,11 @@ namespace CodeWalker
 
         private void SetSelectionMode(string modestr)
         {
+            if (modestr != "Zone points" && SelectionMode == MapSelectionMode.ZonePoints)
+            {
+                ZoneCapturePanel?.EndInteraction(); zoneDragging = zoneOrbit = false;
+                zoneConsumedButtons = MouseButtons.None; Capture = false; Cursor = Cursors.Default;
+            }
 
             foreach (var child in ToolbarSelectButton.DropDownItems)
             {
@@ -5927,6 +5948,12 @@ namespace CodeWalker
             MapSelectionMode mode = MapSelectionMode.EntityPrecision;
             switch (modestr)
             {
+                case "Zone points":
+                    if (SelectionMode != MapSelectionMode.ZonePoints) zonePreviousSelection = SelectionModeStr;
+                    mode = MapSelectionMode.ZonePoints;
+                    if (ZoneCapturePanel == null || ZoneCapturePanel.IsDisposed) ShowProjectForm();
+                    zoneSelectionMenu.Checked = true;
+                    break;
                 default:
                 case "Entity":
                     mode = MapSelectionMode.EntityPrecision;
@@ -6009,6 +6036,11 @@ namespace CodeWalker
             SelectionMode = mode;
             SelectionModeStr = modestr;
             Renderer.SelectionMode = mode;
+            if (mode == MapSelectionMode.ZonePoints && ZoneCapturePanel != null)
+            {
+                if (!ZoneCapturePanel.Interacting) ZoneCapturePanel.BeginPointEditing();
+                else ActivateZoneSelection();
+            }
 
             if (SelectionModeComboBox.Text != modestr)
             {
@@ -6324,6 +6356,7 @@ namespace CodeWalker
 
         private void WorldForm_MouseDown(object sender, MouseEventArgs e)
         {
+            if (ZoneCaptureMouseDown(e)) return;
             switch (e.Button)
             {
                 case MouseButtons.Left: MouseLButtonDown = true; break;
@@ -6419,6 +6452,7 @@ namespace CodeWalker
 
         private void WorldForm_MouseUp(object sender, MouseEventArgs e)
         {
+            if (ZoneCaptureMouseUp(e)) return;
             switch (e.Button)
             {
                 case MouseButtons.Left: MouseLButtonDown = false; break;
@@ -6458,6 +6492,7 @@ namespace CodeWalker
 
         private void WorldForm_MouseMove(object sender, MouseEventArgs e)
         {
+            if (ZoneCaptureMouseMove(e)) return;
             int dx = e.X - MouseX;
             int dy = e.Y - MouseY;
 
@@ -6631,6 +6666,7 @@ namespace CodeWalker
 
         private void WorldForm_KeyDown(object sender, KeyEventArgs e)
         {
+            if (ZoneCaptureKeyDown(e)) return;
             if (ActiveControl is TextBox)
             {
                 var tb = ActiveControl as TextBox;
@@ -8012,6 +8048,7 @@ namespace CodeWalker
 
         private void ToolbarUndoListButton_Click(object sender, EventArgs e)
         {
+            if (ZoneInteraction) { ZoneCapturePanel.UndoPoint(); return; }
             var tsi = sender as ToolStripItem;
             if (tsi == null) return;
             var step = tsi.Tag as UndoStep;
@@ -8034,6 +8071,7 @@ namespace CodeWalker
 
         private void ToolbarRedoListButton_Click(object sender, EventArgs e)
         {
+            if (ZoneInteraction) return;
             var tsi = sender as ToolStripItem;
             if (tsi == null) return;
             var step = tsi.Tag as UndoStep;

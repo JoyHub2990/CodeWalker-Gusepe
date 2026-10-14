@@ -28,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\tools\import_zone_package.py" Link="import_zone_package.py" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Shaders\**\*.cso" Link="Shaders\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\icons\*.png" Link="icons\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\docs\zone-package-v1.fr.md" Link="Zone-package-LISEZMOI.fr.md" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="..\CodeWalker.Core\CodeWalker.Core.csproj" />
     <ProjectReference Include="..\CodeWalker.WinForms\CodeWalker.WinForms.csproj" />
   </ItemGroup>

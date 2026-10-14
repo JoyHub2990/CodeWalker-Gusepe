@@ -186,6 +186,8 @@ ClientBin/
 *.pfx
 *.publishsettings
 node_modules/
+__pycache__/
+*.pyc
 orleans.codegen.cs
 
 # RIA/Silverlight projects

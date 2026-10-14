@@ -1115,6 +1115,8 @@ namespace CodeWalker.World
 
 
 
+        public bool IsYmapCurrentlyAvailable(uint ymaphash) => IsYmapAvailable(ymaphash, CurrentHour, CurrentWeather);
+
         private bool IsYmapAvailable(uint ymaphash, int hour, MetaHash weather)
         {
             MetaHash ymapname = new MetaHash(ymaphash);

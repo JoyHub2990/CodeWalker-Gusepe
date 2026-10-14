@@ -550,6 +550,13 @@ namespace CodeWalker.GameFiles
             AssignChildrenSkeletonsAndBounds();
             AssignChildrenShaders();
 
+            // Match binary loading: tools inspecting an XML-imported drawable also need
+            // access to its fragment's physical archetype and default pose.
+            if (Drawable != null) Drawable.OwnerFragment = this;
+            if (DrawableCloth != null) DrawableCloth.OwnerFragment = this;
+            foreach (var drawable in DrawableArray?.data_items ?? new FragDrawable[0])
+                if (drawable != null) drawable.OwnerFragment = this;
+
             FileVFT = 1079456040;
         }
         public static void WriteXmlNode(FragType f, StringBuilder sb, int indent, string ddsfolder, string name = "Fragment")
